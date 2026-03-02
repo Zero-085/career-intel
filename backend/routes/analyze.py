@@ -1,33 +1,45 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, UploadFile, File, Form
 from services.llm_adapter import generate_analysis
-from utils.json_parser import extract_json
+from utils.json_parser import parse_llm_json
 from utils.prompt_builder import build_prompt
+
+import pdfplumber
+import docx
+import io
 
 router = APIRouter()
 
+@router.post("/api/analyze")
+async def analyze(
+    resume_text: str = Form(None),
+    jd_text: str = Form(...),
+    resume_file: UploadFile = File(None)
+):
+    # --- Extract resume text ---
+    if resume_file:
+        content = await resume_file.read()
 
-class AnalyzeRequest(BaseModel):
-    resume: str
-    jd: str
+        if resume_file.filename.endswith(".pdf"):
+            with pdfplumber.open(io.BytesIO(content)) as pdf:
+                resume_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
 
+        elif resume_file.filename.endswith(".docx"):
+            doc = docx.Document(io.BytesIO(content))
+            resume_text = "\n".join(p.text for p in doc.paragraphs)
 
-@router.post("/analyze")
-async def analyze(request: AnalyzeRequest):
-    if not request.resume.strip():
-        raise HTTPException(status_code=400, detail="Resume text is required.")
-    if not request.jd.strip():
-        raise HTTPException(status_code=400, detail="Job description text is required.")
+        else:
+            return {"error": "Unsupported file format. Upload PDF or DOCX."}
 
-    prompt = build_prompt(request.resume, request.jd)
+    if not resume_text:
+        return {"error": "Resume text is required."}
 
-    try:
-        raw_output = generate_analysis(prompt)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM call failed: {str(e)}")
+    # --- Build prompt ---
+    prompt = build_prompt(resume_text, jd_text)
 
-    result = extract_json(raw_output)
-    if result is None:
-        raise HTTPException(status_code=500, detail="Failed to parse LLM response as valid JSON.")
+    # --- Call LLM ---
+    raw_response = generate_analysis(prompt)
 
-    return result
+    # --- Parse JSON safely ---
+    parsed = parse_llm_json(raw_response)
+
+    return parsed
