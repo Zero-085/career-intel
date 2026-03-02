@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from services.llm_adapter import generate_analysis
-from utils.json_parser import parse_llm_json
+from utils.json_parser import extract_json
 from utils.prompt_builder import build_prompt
 
 import pdfplumber
@@ -9,7 +9,7 @@ import io
 
 router = APIRouter()
 
-@router.post("/api/analyze")
+@router.post("/analyze")
 async def analyze(
     resume_text: str = Form(None),
     jd_text: str = Form(...),
@@ -40,6 +40,6 @@ async def analyze(
     raw_response = generate_analysis(prompt)
 
     # --- Parse JSON safely ---
-    parsed = parse_llm_json(raw_response)
+    parsed = extract_json(raw_response)
 
     return parsed

@@ -1,29 +1,34 @@
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 /**
- * Sends resume and job description to the backend for analysis.
- * @param {string} resume
- * @param {string} jd
- * @returns {Promise<object>} Parsed analysis result
+ * Sends resume text or file + job description to backend
  */
-export async function analyzeResume(resume, jd) {
+export async function analyze({ resumeText, jdText, resumeFile }) {
+  const formData = new FormData();
+
+  if (resumeFile) {
+    formData.append("resume_file", resumeFile);
+  } else {
+    formData.append("resume_text", resumeText);
+  }
+
+  formData.append("jd_text", jdText);
+
   const response = await fetch(`${BACKEND_URL}/api/analyze`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ resume, jd }),
+    body: formData,
   });
 
   if (!response.ok) {
     let errorMessage = `Server error: ${response.status}`;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.detail || errorMessage;
+      errorMessage = errorData.error || errorData.detail || errorMessage;
     } catch {
-      // response body wasn't JSON — keep default message
+      // Ignore JSON parsing error
     }
     throw new Error(errorMessage);
   }
 
-  const data = await response.json();
-  return data;
+  return await response.json();
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { analyzeResume } from "../api/analyzeApi.js";
+import { analyze as analyzeApi } from "../api/analyzeApi.js";
 
 /**
  * Custom hook that encapsulates all state and logic for the analysis flow.
@@ -22,10 +22,16 @@ export function useAnalysis() {
     setResult(null);
 
     try {
-      const data = await analyzeResume(resume, jd);
+      const data = await analyzeApi({
+        resumeText: resume,
+        jdText: jd,
+        resumeFile: null,
+      });
       setResult(data);
     } catch (err) {
-      setError(err.message || "An unexpected error occurred. Please try again.");
+      setError(
+        err.message || "An unexpected error occurred. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -39,5 +45,15 @@ export function useAnalysis() {
     setLoading(false);
   };
 
-  return { resume, setResume, jd, setJd, result, loading, error, analyze, reset };
+  return {
+    resume,
+    setResume,
+    jd,
+    setJd,
+    result,
+    loading,
+    error,
+    analyze,
+    reset,
+  };
 }
