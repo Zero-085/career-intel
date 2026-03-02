@@ -5,7 +5,19 @@ import ScoreRing from "../components/ScoreRing.jsx";
 import ResultTabs from "../components/ResultTabs.jsx";
 
 export default function HomePage() {
-  const { resume, setResume, jd, setJd, result, loading, error, analyze, reset } = useAnalysis();
+  const {
+    resume,
+    setResume,
+    jd,
+    setJd,
+    resumeFile,
+    setResumeFile,
+    result,
+    loading,
+    error,
+    analyze,
+    reset,
+  } = useAnalysis();
 
   return (
     <div>
@@ -18,7 +30,9 @@ export default function HomePage() {
             <div className="header__logo">⚡</div>
             <div>
               <div className="header__title">Career Match Analyzer</div>
-              <div className="header__sub">AI-powered resume ↔ JD alignment engine</div>
+              <div className="header__sub">
+                AI-powered resume ↔ JD alignment engine
+              </div>
             </div>
           </div>
         </div>
@@ -28,16 +42,48 @@ export default function HomePage() {
         {/* Input Section */}
         <section className="input-section">
           <div className="input-section__grid">
+            {/* Resume */}
             <div className="input-group">
               <label htmlFor="resume-input">Your Resume</label>
               <textarea
                 id="resume-input"
                 placeholder="Paste your full resume text here..."
                 value={resume}
-                onChange={(e) => setResume(e.target.value)}
+                onChange={(e) => {
+                  setResume(e.target.value);
+                  setResumeFile(null); // clear file if typing
+                }}
                 disabled={loading}
               />
+
+              {/* File Upload */}
+              <div style={{ marginTop: "10px" }}>
+                <input
+                  type="file"
+                  accept=".pdf,.docx"
+                  disabled={loading}
+                  onChange={(e) => {
+                    if (e.target.files.length > 0) {
+                      setResumeFile(e.target.files[0]);
+                      setResume(""); // clear text if file chosen
+                    }
+                  }}
+                />
+                {resumeFile && (
+                  <div
+                    style={{
+                      marginTop: "6px",
+                      fontSize: "0.9rem",
+                      opacity: 0.8,
+                    }}
+                  >
+                    Selected: {resumeFile.name}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Job Description */}
             <div className="input-group">
               <label htmlFor="jd-input">Job Description</label>
               <textarea
@@ -62,10 +108,13 @@ export default function HomePage() {
             <button
               className="btn btn--primary"
               onClick={analyze}
-              disabled={loading || !resume.trim() || !jd.trim()}
+              disabled={
+                loading || (!resume.trim() && !resumeFile) || !jd.trim()
+              }
             >
               {loading ? "Analyzing..." : "Analyze Match →"}
             </button>
+
             {result && (
               <button className="btn btn--ghost" onClick={reset}>
                 Start Over
@@ -81,11 +130,28 @@ export default function HomePage() {
 
             {/* Score Row */}
             <div className="score-row">
-              <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div
+                className="card"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 <ScoreRing score={result.match_score} label="Match Score" />
               </div>
-              <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ScoreRing score={result.ats_optimization} label="ATS Optimization" />
+              <div
+                className="card"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ScoreRing
+                  score={result.ats_optimization}
+                  label="ATS Optimization"
+                />
               </div>
             </div>
 

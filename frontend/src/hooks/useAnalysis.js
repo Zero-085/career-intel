@@ -7,13 +7,16 @@ import { analyze as analyzeApi } from "../api/analyzeApi.js";
 export function useAnalysis() {
   const [resume, setResume] = useState("");
   const [jd, setJd] = useState("");
+  const [resumeFile, setResumeFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const analyze = async () => {
-    if (!resume.trim() || !jd.trim()) {
-      setError("Please paste both your resume and the job description.");
+    if ((!resume.trim() && !resumeFile) || !jd.trim()) {
+      setError(
+        "Please provide a resume (text or file) and the job description.",
+      );
       return;
     }
 
@@ -25,7 +28,7 @@ export function useAnalysis() {
       const data = await analyzeApi({
         resumeText: resume,
         jdText: jd,
-        resumeFile: null,
+        resumeFile: resumeFile,
       });
       setResult(data);
     } catch (err) {
@@ -50,6 +53,8 @@ export function useAnalysis() {
     setResume,
     jd,
     setJd,
+    resumeFile,
+    setResumeFile,
     result,
     loading,
     error,
