@@ -10,47 +10,62 @@ import {
 } from "recharts";
 
 export default function SkillRadar({ data }) {
-  if (!data || data.length === 0) return null;
+  if (!data?.length) return <p className="empty">No radar data available.</p>;
 
   return (
     <div>
-      <div className="radar-container">
+      <p className="section-desc">
+        Visual comparison across the key competency axes extracted from this job
+        description.
+      </p>
+      <div className="radar-wrap">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={data} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
-            <PolarGrid stroke="#1e2535" />
+          <RadarChart
+            data={data}
+            margin={{ top: 16, right: 40, bottom: 16, left: 40 }}
+          >
+            <PolarGrid stroke="#22222c" />
             <PolarAngleAxis
               dataKey="axis"
-              tick={{ fill: "#8892a4", fontSize: 12, fontFamily: "DM Mono" }}
+              tick={{
+                fill: "#6e6a64",
+                fontSize: 11,
+                fontFamily: "JetBrains Mono",
+              }}
             />
             <Radar
               name="You"
               dataKey="candidate"
-              stroke="#00f5c4"
-              fill="#00f5c4"
-              fillOpacity={0.18}
+              stroke="#4ecdc4"
+              fill="#4ecdc4"
+              fillOpacity={0.15}
               strokeWidth={2}
             />
             <Radar
               name="Job Requirement"
               dataKey="jd"
-              stroke="#7c6af7"
-              fill="#7c6af7"
-              fillOpacity={0.1}
+              stroke="#e8b84b"
+              fill="#e8b84b"
+              fillOpacity={0.06}
               strokeWidth={2}
-              strokeDasharray="4 2"
+              strokeDasharray="5 3"
             />
             <Tooltip
               contentStyle={{
-                background: "#141925",
-                border: "1px solid #1e2535",
-                borderRadius: "8px",
-                color: "#eef2ff",
-                fontFamily: "DM Mono",
-                fontSize: "12px",
+                background: "#111118",
+                border: "1px solid #2e2e3a",
+                borderRadius: "10px",
+                color: "#f4f0e8",
+                fontFamily: "JetBrains Mono",
+                fontSize: "11px",
               }}
             />
             <Legend
-              wrapperStyle={{ fontFamily: "DM Mono", fontSize: "12px", color: "#8892a4" }}
+              wrapperStyle={{
+                fontFamily: "JetBrains Mono",
+                fontSize: "11px",
+                color: "#6e6a64",
+              }}
             />
           </RadarChart>
         </ResponsiveContainer>
