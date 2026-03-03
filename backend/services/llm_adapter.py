@@ -15,7 +15,10 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
 
 
 def generate_analysis(prompt: str) -> str:
-    if LLM_PROVIDER == "anthropic":
+    if LLM_PROVIDER == "mock":
+        return _mock_response()
+    
+    elif LLM_PROVIDER == "anthropic":
         return _call_anthropic(prompt)
 
     elif LLM_PROVIDER == "openai":
@@ -90,6 +93,32 @@ def _call_groq(prompt: str) -> str:
         model=model,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1500,
+        temperature=0.2
     )
 
     return response.choices[0].message.content
+
+def _mock_response():
+    return """
+    {
+      "match_score": 82,
+      "ats_optimization": 75,
+      "executive_summary": "Mock response for development.",
+      "skill_analysis": {
+        "matched_skills": ["Python", "React"],
+        "missing_skills": [
+          {"skill": "Docker", "priority": "High", "reason": "Required by JD"}
+        ]
+      },
+      "radar_data": [
+        {"axis": "Technical Skills", "candidate": 80, "jd": 100}
+      ],
+      "resume_upgrades": [],
+      "learning_roadmap": {
+        "week1": {"theme": "Mock", "tasks": []},
+        "week2": {"theme": "Mock", "tasks": []},
+        "week3": {"theme": "Mock", "tasks": []},
+        "week4": {"theme": "Mock", "tasks": []}
+      }
+    }
+    """

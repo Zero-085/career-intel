@@ -155,6 +155,15 @@ export default function HomePage() {
               </div>
             </div>
 
+            {result.hiring_recommendation && (
+              <div className="card" style={{ marginBottom: 24 }}>
+                <div className="card__title">Hiring Recommendation</div>
+                <p style={{ fontWeight: 600 }}>
+                  {result.hiring_recommendation}
+                </p>
+              </div>
+            )}
+
             {/* Executive Summary */}
             {result.executive_summary && (
               <div className="card summary-card" style={{ marginBottom: 32 }}>
