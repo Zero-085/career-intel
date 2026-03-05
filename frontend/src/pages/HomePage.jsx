@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAnalysis } from "../hooks/useAnalysis.js";
 import SkillRadar from "../components/SkillRadar.jsx";
 import MatchedSkills from "../components/MatchedSkills.jsx";
@@ -6,13 +6,14 @@ import SkillGaps from "../components/SkillGaps.jsx";
 import ResumeUpgrades from "../components/ResumeUpgrades.jsx";
 import LearningRoadmap from "../components/LearningRoadmap.jsx";
 
-// ─── Score helpers ─────────────────────────────────────────────────
+const API = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+
+// ─── Helpers ───────────────────────────────────────────────────────
 function scoreClass(s) {
   if (s >= 75) return "high";
   if (s >= 50) return "mid";
   return "low";
 }
-
 function recClass(rec) {
   if (!rec) return "upskill";
   const r = rec.toLowerCase();
@@ -33,14 +34,13 @@ const LOADING_STEPS = [
 
 function LoadingScreen() {
   const [step, setStep] = useState(0);
-
   useEffect(() => {
-    const timer = setInterval(() => {
-      setStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
-    }, 900);
-    return () => clearInterval(timer);
+    const t = setInterval(
+      () => setStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1)),
+      900,
+    );
+    return () => clearInterval(t);
   }, []);
-
   return (
     <div className="loading-screen">
       <div className="loading-ring">
@@ -73,6 +73,61 @@ function LoadingScreen() {
   );
 }
 
+// ─── Rewrite Loading Screen ────────────────────────────────────────
+const REWRITE_STEPS = [
+  "Reading your current resume",
+  "Identifying JD keywords",
+  "Rewriting bullets with metrics",
+  "Optimising for ATS",
+  "Formatting your new DOCX",
+];
+
+function RewriteLoadingScreen() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const t = setInterval(
+      () => setStep((s) => Math.min(s + 1, REWRITE_STEPS.length - 1)),
+      1100,
+    );
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="loading-screen">
+      <div className="loading-ring">
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+          <circle cx="30" cy="30" r="26" stroke="#22222c" strokeWidth="3" />
+          <circle
+            cx="30"
+            cy="30"
+            r="26"
+            stroke="#4ecdc4"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeDasharray="50 110"
+          />
+        </svg>
+      </div>
+      <div className="loading-label" style={{ color: "#4ecdc4" }}>
+        Rewriting your resume
+      </div>
+      <ul className="loading-steps-list">
+        {REWRITE_STEPS.map((s, i) => (
+          <li
+            key={i}
+            className={`loading-step ${i === step ? "active" : i < step ? "done" : ""}`}
+          >
+            <span
+              className="loading-step__dot"
+              style={i === step ? { background: "#4ecdc4" } : {}}
+            />
+            {s}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ─── Score Card ────────────────────────────────────────────────────
 function ScoreCard({ score, label, type }) {
   const cls = scoreClass(score);
@@ -86,6 +141,284 @@ function ScoreCard({ score, label, type }) {
           style={{ width: `${score}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+// ─── JD URL Input ──────────────────────────────────────────────────
+function JDInput({ jd, setJd, jdUrl, setJdUrl, jdMode, setJdMode }) {
+  const [fetching, setFetching] = useState(false);
+  const [fetchMsg, setFetchMsg] = useState(null); // {type: "ok"|"warn"|"err", text}
+  const [previewTitle, setPreview] = useState(null);
+
+  async function handleFetch() {
+    if (!jdUrl.trim()) return;
+    setFetching(true);
+    setFetchMsg(null);
+    setPreview(null);
+    try {
+      const fd = new FormData();
+      fd.append("jd_url", jdUrl.trim());
+      const res = await fetch(`${API}/api/jd/fetch-url`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setJd(data.text);
+        setPreview(data.title || "Job description loaded");
+        setFetchMsg({
+          type: "ok",
+          text: `✓ Loaded from ${data.platform}${data.title ? " · " + data.title : ""}`,
+        });
+      } else {
+        setFetchMsg({
+          type: data.blocked ? "warn" : "err",
+          text: data.error,
+        });
+      }
+    } catch (e) {
+      setFetchMsg({
+        type: "err",
+        text: "Network error — could not reach backend.",
+      });
+    } finally {
+      setFetching(false);
+    }
+  }
+
+  return (
+    <div className="input-card">
+      <div className="input-card__header">
+        <div className="input-card__label">
+          <span className="input-card__icon input-card__icon--jd">💼</span>
+          Job Description
+        </div>
+        {/* Mode toggle */}
+        <div style={S.modeToggle}>
+          <button
+            style={{
+              ...S.modeBtn,
+              ...(jdMode === "paste" ? S.modeBtnActive : {}),
+            }}
+            onClick={() => setJdMode("paste")}
+          >
+            Paste text
+          </button>
+          <button
+            style={{
+              ...S.modeBtn,
+              ...(jdMode === "url" ? S.modeBtnActiveUrl : {}),
+            }}
+            onClick={() => setJdMode("url")}
+          >
+            🔗 URL
+          </button>
+        </div>
+      </div>
+
+      {jdMode === "paste" ? (
+        <>
+          <textarea
+            className="input-card__textarea"
+            placeholder="Paste the full job description here…"
+            value={jd}
+            onChange={(e) => setJd(e.target.value)}
+          />
+          <div className="input-card__footer">
+            <span className="char-count">{jd.length} chars</span>
+          </div>
+        </>
+      ) : (
+        <div style={{ padding: "16px 0 4px" }}>
+          <div style={S.urlRow}>
+            <input
+              style={S.urlInput}
+              placeholder="https://boards.greenhouse.io/company/jobs/…"
+              value={jdUrl}
+              onChange={(e) => {
+                setJdUrl(e.target.value);
+                setFetchMsg(null);
+                setPreview(null);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && handleFetch()}
+            />
+            <button
+              style={{ ...S.urlBtn, opacity: fetching ? 0.5 : 1 }}
+              onClick={handleFetch}
+              disabled={fetching || !jdUrl.trim()}
+            >
+              {fetching ? "…" : "Import"}
+            </button>
+          </div>
+
+          {/* Status message */}
+          {fetchMsg && (
+            <div
+              style={{
+                ...S.fetchMsg,
+                background:
+                  fetchMsg.type === "ok"
+                    ? "rgba(78,205,196,0.08)"
+                    : fetchMsg.type === "warn"
+                      ? "rgba(232,184,75,0.08)"
+                      : "rgba(255,107,107,0.08)",
+                borderColor:
+                  fetchMsg.type === "ok"
+                    ? "rgba(78,205,196,0.3)"
+                    : fetchMsg.type === "warn"
+                      ? "rgba(232,184,75,0.3)"
+                      : "rgba(255,107,107,0.3)",
+                color:
+                  fetchMsg.type === "ok"
+                    ? "#4ecdc4"
+                    : fetchMsg.type === "warn"
+                      ? "#e8b84b"
+                      : "#ff6b6b",
+              }}
+            >
+              {fetchMsg.text}
+            </div>
+          )}
+
+          {/* Supported platforms note */}
+          {!fetchMsg && (
+            <div style={S.platformNote}>
+              ✓ Greenhouse · Lever · Ashby · Workday · most ATS boards
+              <br />✗ LinkedIn &amp; Indeed require manual paste
+            </div>
+          )}
+
+          {/* Preview of loaded text */}
+          {jd && fetchMsg?.type === "ok" && (
+            <div style={S.previewBox}>
+              <div style={S.previewLabel}>Loaded JD preview</div>
+              <div style={S.previewText}>
+                {jd.slice(0, 300)}
+                {jd.length > 300 ? "…" : ""}
+              </div>
+              <button
+                style={S.clearBtn}
+                onClick={() => {
+                  setJd("");
+                  setJdUrl("");
+                  setFetchMsg(null);
+                }}
+              >
+                ✕ Clear
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Rewrite Button + Download ─────────────────────────────────────
+function RewriteSection({ result }) {
+  const [rewriting, setRewriting] = useState(false);
+  const [rewriteError, setError] = useState(null);
+  const [done, setDone] = useState(false);
+  const [name, setName] = useState("");
+
+  async function handleRewrite() {
+    setRewriting(true);
+    setError(null);
+    setDone(false);
+    try {
+      const res = await fetch(`${API}/api/rewrite-resume`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resume_text: result._resume_text || "",
+          jd_text: result._jd_text || "",
+          analysis: result,
+          candidate_name: name.trim() || "Candidate",
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+
+      // Download the DOCX
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const safeName = (name.trim() || "Candidate").replace(/\s+/g, "_");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeName}_Rewritten_Resume.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setDone(true);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRewriting(false);
+    }
+  }
+
+  if (rewriting) return <RewriteLoadingScreen />;
+
+  return (
+    <div style={S.rewriteSection}>
+      <div style={S.rewriteHeader}>
+        <div style={S.rewriteIcon}>✦</div>
+        <div>
+          <div style={S.rewriteTitle}>Rewrite My Resume</div>
+          <div style={S.rewriteSub}>
+            Get a fully rewritten, JD-targeted resume as a downloadable DOCX —
+            keywords optimised, bullets strengthened, ATS-ready.
+          </div>
+        </div>
+      </div>
+
+      <div style={S.rewriteInputRow}>
+        <input
+          style={S.nameInput}
+          placeholder="Your name (for the file)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleRewrite()}
+        />
+        <button
+          style={{ ...S.rewriteBtn, opacity: rewriting ? 0.5 : 1 }}
+          onClick={handleRewrite}
+          disabled={rewriting}
+        >
+          {done ? "↓ Download again" : "Generate & Download  ↓"}
+        </button>
+      </div>
+
+      {rewriteError && (
+        <div
+          style={{
+            ...S.fetchMsg,
+            background: "rgba(255,107,107,0.08)",
+            borderColor: "rgba(255,107,107,0.3)",
+            color: "#ff6b6b",
+            marginTop: 10,
+          }}
+        >
+          {rewriteError}
+        </div>
+      )}
+
+      {done && !rewriteError && (
+        <div
+          style={{
+            ...S.fetchMsg,
+            background: "rgba(78,205,196,0.08)",
+            borderColor: "rgba(78,205,196,0.3)",
+            color: "#4ecdc4",
+            marginTop: 10,
+          }}
+        >
+          ✓ Your rewritten resume was downloaded. Check your downloads folder.
+        </div>
+      )}
     </div>
   );
 }
@@ -116,6 +449,9 @@ export default function HomePage() {
   } = useAnalysis();
 
   const [activeTab, setActiveTab] = useState("radar");
+  const [jdMode, setJdMode] = useState("paste");
+  const [jdUrl, setJdUrl] = useState("");
+
   const step = result ? 2 : 0;
 
   const handleFileChange = (e) => {
@@ -125,10 +461,24 @@ export default function HomePage() {
       setResume("");
     }
   };
+  const clearFile = () => setResumeFile(null);
 
-  const clearFile = () => {
-    setResumeFile(null);
-  };
+  // Pass jdUrl into analyze if URL mode
+  function handleAnalyze() {
+    if (jdMode === "url" && jdUrl.trim() && !jd.trim()) {
+      // jd wasn't fetched yet — show message
+      return;
+    }
+    analyze();
+  }
+
+  const canAnalyze = loading
+    ? false
+    : !resume.trim() && !resumeFile
+      ? false
+      : jdMode === "url"
+        ? !!jd.trim() // URL mode: need fetched jd
+        : !!jd.trim(); // paste mode: need jd text
 
   return (
     <div className="app">
@@ -163,12 +513,10 @@ export default function HomePage() {
                 Know exactly how you <em>match</em> any role
               </h1>
               <p className="hero__sub">
-                Paste your resume and any job description. Career Intel
-                dynamically extracts requirements and gives you an honest,
+                Paste your resume and any job description — or drop a URL.
+                Career Intel extracts requirements and gives you an honest,
                 actionable fit score.
               </p>
-
-              {/* Steps */}
               <div className="steps">
                 {["Add Resume", "Add JD", "View Results"].map((label, i) => (
                   <React.Fragment key={i}>
@@ -189,8 +537,8 @@ export default function HomePage() {
           {!result && (
             <div className="fade-in">
               <div className="input-panel">
-                {/* Resume */}
-                <div className={`input-card`}>
+                {/* Resume card */}
+                <div className="input-card">
                   <div className="input-card__header">
                     <div className="input-card__label">
                       <span className="input-card__icon input-card__icon--resume">
@@ -200,96 +548,91 @@ export default function HomePage() {
                     </div>
                   </div>
                   <textarea
-                    placeholder="Paste your full resume text here…&#10;&#10;Include work experience, skills, education, and achievements."
+                    className="input-card__textarea"
+                    placeholder={
+                      "Paste your full resume text here…\n\nInclude work experience, skills, education, and achievements."
+                    }
                     value={resume}
-                    onChange={(e) => {
-                      setResume(e.target.value);
-                      clearFile();
-                    }}
+                    onChange={(e) => setResume(e.target.value)}
                     disabled={loading || !!resumeFile}
                     style={
                       resumeFile ? { opacity: 0.4, pointerEvents: "none" } : {}
                     }
                   />
                   <div className="input-card__footer">
-                    <label className="file-upload-btn">
-                      <input
-                        type="file"
-                        accept=".pdf,.docx"
-                        onChange={handleFileChange}
-                        disabled={loading}
-                      />
-                      ↑ Upload PDF / DOCX
-                    </label>
                     {resumeFile && (
-                      <>
+                      <div className="file-pill">
                         <span className="file-name">✓ {resumeFile.name}</span>
-                        <button
-                          onClick={clearFile}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            color: "var(--text-2)",
-                            cursor: "pointer",
-                            fontSize: "0.75rem",
-                            marginLeft: 4,
-                          }}
-                        >
+                        <button className="file-clear" onClick={clearFile}>
                           ✕
                         </button>
-                      </>
+                      </div>
                     )}
                     {!resumeFile && (
                       <span className="char-count">{resume.length} chars</span>
                     )}
+                    <label className="file-upload-label">
+                      Upload PDF/DOCX
+                      <input
+                        type="file"
+                        accept=".pdf,.docx"
+                        onChange={handleFileChange}
+                        style={{ display: "none" }}
+                      />
+                    </label>
                   </div>
                 </div>
 
-                {/* JD */}
-                <div className="input-card">
-                  <div className="input-card__header">
-                    <div className="input-card__label">
-                      <span className="input-card__icon input-card__icon--jd">
-                        💼
-                      </span>
-                      Job Description
-                    </div>
-                  </div>
-                  <textarea
-                    placeholder="Paste the full job description here…&#10;&#10;Include responsibilities, requirements, and preferred qualifications."
-                    value={jd}
-                    onChange={(e) => setJd(e.target.value)}
-                    disabled={loading}
-                  />
-                  <div className="input-card__footer">
-                    <span className="char-count">{jd.length} chars</span>
-                  </div>
-                </div>
+                {/* JD card — with URL mode */}
+                <JDInput
+                  jd={jd}
+                  setJd={setJd}
+                  jdUrl={jdUrl}
+                  setJdUrl={setJdUrl}
+                  jdMode={jdMode}
+                  setJdMode={setJdMode}
+                />
               </div>
 
               {error && (
-                <div className="error-msg">
-                  <span>⚠</span>
-                  <span>{error}</span>
+                <div
+                  className={`error-banner${error.includes("job description in the Resume") ? " error-banner--swap" : ""}`}
+                >
+                  {error.includes("job description in the Resume") ? (
+                    <>⚠️ {error}</>
+                  ) : (
+                    <>
+                      <strong>Error:</strong> {error}
+                    </>
+                  )}
                 </div>
               )}
 
-              <div className="action-row">
+              <div style={{ textAlign: "center", marginTop: 24 }}>
                 <button
                   className="btn-analyze"
-                  onClick={analyze}
-                  disabled={
-                    loading || (!resume.trim() && !resumeFile) || !jd.trim()
-                  }
+                  onClick={handleAnalyze}
+                  disabled={!canAnalyze}
                 >
                   Analyze My Fit
                   <span className="btn-analyze__arrow">→</span>
                 </button>
+                {jdMode === "url" && jdUrl && !jd && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: "0.78rem",
+                      color: "#6e6a64",
+                    }}
+                  >
+                    Click "Import" above to load the JD first
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* ── RESULTS ────────────────────────────────────────────── */}
+          {/* Results */}
           {result && (
             <div className="results slide-up">
               {/* Header */}
@@ -308,6 +651,18 @@ export default function HomePage() {
                   {result.role_level && (
                     <span className="role-badge role-badge--level">
                       {result.role_level}
+                    </span>
+                  )}
+                  {result.jd_platform && (
+                    <span
+                      className="role-badge"
+                      style={{
+                        background: "rgba(78,205,196,0.12)",
+                        color: "#4ecdc4",
+                        border: "1px solid rgba(78,205,196,0.25)",
+                      }}
+                    >
+                      via {result.jd_platform}
                     </span>
                   )}
                 </div>
@@ -363,7 +718,6 @@ export default function HomePage() {
                       {result.executive_summary}
                     </p>
                   )}
-
                   {(result.top_strengths?.length ||
                     result.critical_gaps?.length) && (
                     <div className="strengths-gaps">
@@ -437,6 +791,11 @@ export default function HomePage() {
 
               <div className="divider" />
 
+              {/* ── Rewrite Resume ─────────────────────────────── */}
+              <RewriteSection result={result} />
+
+              <div className="divider" />
+
               <div className="action-row" style={{ justifyContent: "center" }}>
                 <button className="btn-reset" onClick={reset}>
                   ← Analyze another role
@@ -449,3 +808,186 @@ export default function HomePage() {
     </div>
   );
 }
+
+// ─── Inline styles for new components ─────────────────────────────
+const S = {
+  modeToggle: {
+    display: "flex",
+    gap: 4,
+    background: "rgba(255,255,255,0.03)",
+    borderRadius: 8,
+    padding: 3,
+    border: "1px solid rgba(255,255,255,0.06)",
+  },
+  modeBtn: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.72rem",
+    fontWeight: 500,
+    padding: "4px 12px",
+    borderRadius: 6,
+    border: "none",
+    background: "transparent",
+    color: "#6e6a64",
+    cursor: "pointer",
+    transition: "all 0.15s",
+  },
+  modeBtnActive: {
+    background: "rgba(232,184,75,0.15)",
+    color: "#e8b84b",
+  },
+  modeBtnActiveUrl: {
+    background: "rgba(78,205,196,0.15)",
+    color: "#4ecdc4",
+  },
+
+  urlRow: {
+    display: "flex",
+    gap: 10,
+    marginBottom: 10,
+  },
+  urlInput: {
+    flex: 1,
+    fontFamily: "JetBrains Mono, monospace",
+    fontSize: "0.78rem",
+    padding: "10px 14px",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.09)",
+    borderRadius: 9,
+    color: "#c8c4bc",
+    outline: "none",
+  },
+  urlBtn: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    padding: "10px 20px",
+    background: "rgba(78,205,196,0.12)",
+    border: "1px solid rgba(78,205,196,0.3)",
+    borderRadius: 9,
+    color: "#4ecdc4",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    flexShrink: 0,
+  },
+  fetchMsg: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.78rem",
+    padding: "9px 14px",
+    borderRadius: 8,
+    border: "1px solid",
+    lineHeight: 1.5,
+    marginBottom: 8,
+  },
+  platformNote: {
+    fontFamily: "JetBrains Mono, monospace",
+    fontSize: "0.66rem",
+    color: "#3a3830",
+    lineHeight: 1.7,
+    marginBottom: 8,
+  },
+  previewBox: {
+    background: "rgba(78,205,196,0.05)",
+    border: "1px solid rgba(78,205,196,0.12)",
+    borderRadius: 8,
+    padding: "10px 14px",
+    marginTop: 8,
+  },
+  previewLabel: {
+    fontFamily: "JetBrains Mono, monospace",
+    fontSize: "0.62rem",
+    color: "#4ecdc4",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  previewText: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.75rem",
+    color: "#6e6a64",
+    lineHeight: 1.55,
+    whiteSpace: "pre-wrap",
+  },
+  clearBtn: {
+    marginTop: 8,
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.7rem",
+    padding: "3px 10px",
+    background: "transparent",
+    border: "1px solid rgba(255,107,107,0.3)",
+    borderRadius: 6,
+    color: "#ff6b6b",
+    cursor: "pointer",
+  },
+
+  // Rewrite section
+  rewriteSection: {
+    background:
+      "linear-gradient(135deg, rgba(78,205,196,0.05) 0%, rgba(167,139,250,0.05) 100%)",
+    border: "1px solid rgba(78,205,196,0.15)",
+    borderRadius: 16,
+    padding: "28px 32px",
+    margin: "24px 0",
+  },
+  rewriteHeader: {
+    display: "flex",
+    gap: 16,
+    alignItems: "flex-start",
+    marginBottom: 20,
+  },
+  rewriteIcon: {
+    width: 40,
+    height: 40,
+    background: "rgba(78,205,196,0.12)",
+    border: "1px solid rgba(78,205,196,0.25)",
+    borderRadius: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#4ecdc4",
+    fontSize: "1.1rem",
+    flexShrink: 0,
+  },
+  rewriteTitle: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "1.05rem",
+    fontWeight: 700,
+    color: "#f4f0e8",
+    marginBottom: 4,
+  },
+  rewriteSub: {
+    fontSize: "0.82rem",
+    color: "#6e6a64",
+    lineHeight: 1.6,
+  },
+  rewriteInputRow: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  nameInput: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.85rem",
+    padding: "11px 16px",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.09)",
+    borderRadius: 10,
+    color: "#c8c4bc",
+    outline: "none",
+    flex: "1",
+    minWidth: 160,
+  },
+  rewriteBtn: {
+    fontFamily: "Space Grotesk, sans-serif",
+    fontSize: "0.88rem",
+    fontWeight: 600,
+    padding: "11px 24px",
+    background: "rgba(78,205,196,0.12)",
+    border: "1px solid rgba(78,205,196,0.35)",
+    borderRadius: 10,
+    color: "#4ecdc4",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    letterSpacing: "0.01em",
+    flexShrink: 0,
+  },
+};

@@ -23,6 +23,21 @@ Read the job description carefully. Identify:
 PHASE 2 — EVALUATE THE RESUME PRECISELY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+SKILL EQUIVALENCE RULES (apply before matching):
+  A required skill is MATCHED if the resume demonstrates it by name, alias, or tool.
+  Examples of valid equivalences:
+  - "CI/CD pipelines" is matched by: GitHub Actions, GitLab CI, Jenkins, CircleCI, Travis CI, Bitbucket Pipelines
+  - "FastAPI or Django" (OR condition) is ONE skill — matched if EITHER FastAPI OR Django is present
+  - "AWS" is matched by: AWS, Amazon Web Services, EC2, S3, IAM, Lambda, ECS, EKS (any AWS service)
+  - "Microservices Architecture" is matched by: microservices, service-oriented, distributed systems, API gateway patterns
+  - "PostgreSQL" is matched by: PostgreSQL, Postgres, psycopg2, SQLAlchemy with Postgres
+  - "Docker" is matched by: Docker, containerisation, docker-compose, Dockerfile, Docker Hub
+  General rule: match on DEMONSTRATED CAPABILITY, not just exact keyword. If the resume shows
+  they've used a tool that fulfils the skill, count it as matched.
+
+  OR conditions in JD ("FastAPI or Django", "React or Vue") count as ONE required skill slot.
+  Do NOT split them into two separate required skills.
+
 For each required skill: does the resume clearly demonstrate it? (yes/no)
 For each preferred skill: does the resume clearly demonstrate it? (yes/no)
 
@@ -39,6 +54,9 @@ MATCH SCORE FORMULA:
   R = required_pct * 70           (max 70 points)
   P = (preferred_matched / preferred_total) * 20   (max 20, use 0 if no preferred)
   E = experience depth score 0-10  (seniority fit, years, domain relevance)
+      IMPORTANT: E is NEVER 0 if the candidate has any real work experience or projects.
+      Give E = 2-4 for unrelated experience, E = 5-7 for partially relevant, E = 8-10 for strong fit.
+      Only give E = 0 if the resume has literally zero experience (no jobs, no projects, no internships).
 
   raw_match = R + P + E
 
@@ -57,9 +75,16 @@ ATS SCORE FORMULA:
   ATS measures: keyword density, quantified achievements, action verbs,
   formatting clarity, JD language alignment.
 
+  ATS is about resume QUALITY and FORMATTING, not just skill match.
+  Even a mismatched candidate can have a well-formatted resume (ATS 30-55).
+  A candidate with zero required skills but clear structure, action verbs,
+  and quantified bullets should still score 25-45 on ATS.
+  NEVER give ats_optimization = 0 unless the resume is blank or unreadable.
+
   ATS HARD RULES (strictly enforce):
-  - IF required_matched <= 2  -> ats_optimization MUST be <= 35
-  - IF required_matched <= 4  -> ats_optimization MUST be <= 60
+  - IF required_matched == 0  -> ats_optimization MUST be between 20 and 45
+  - IF required_matched <= 2  -> ats_optimization MUST be <= 50
+  - IF required_matched <= 4  -> ats_optimization MUST be <= 65
   - IF required_matched == required_total AND preferred_matched >= ceil(preferred_total * 0.6)
     -> ats_optimization can range 85-95
   - Missing required keywords DIRECTLY hurt ATS score

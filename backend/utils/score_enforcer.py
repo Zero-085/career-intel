@@ -36,6 +36,26 @@ def enforce_scores(data: dict) -> dict:
             preferred_matched = 0
 
     if required_total == 0:
+        # Can't apply skill-based floors/caps, but still derive recommendation
+        # from whatever match_score the LLM returned (avoids silent 0/0 display)
+        match_score = int(data.get("match_score", 0))
+        ats_score   = int(data.get("ats_optimization", 0))
+        if match_score >= 85:
+            rec = "Strong Interview"
+        elif match_score >= 70:
+            rec = "Interview"
+        elif match_score >= 55:
+            rec = "Upskill Required"
+        elif match_score > 0:
+            rec = "Reject"
+        else:
+            # True 0/0 — LLM gave nothing useful; mark as unscored
+            rec = "Reject"
+            match_score = 0
+            ats_score   = 0
+        data["match_score"]           = match_score
+        data["ats_optimization"]      = ats_score
+        data["hiring_recommendation"] = rec
         return data
 
     required_pct  = required_matched / required_total
@@ -45,7 +65,9 @@ def enforce_scores(data: dict) -> dict:
     match_score = int(data.get("match_score", 0))
     ats_score   = int(data.get("ats_optimization", 0))
 
-    # ── 3. MATCH SCORE: hard caps + floors ───────────────────────────
+    # ── 3. MATCH SCORE: caps and floors are two independent checks ───────────
+    #
+    # CAPS — applied first, strict upper bounds
     if required_pct < 0.20:
         match_score = min(match_score, 30)
     elif required_pct < 0.30:
@@ -56,23 +78,44 @@ def enforce_scores(data: dict) -> dict:
         match_score = min(match_score, 65)
     elif required_pct < 0.85:
         match_score = min(match_score, 78)
-    elif required_pct >= 1.0 and preferred_pct >= 1.0:
-        match_score = max(match_score, 93)    # full match → floor 93
+    # 0.85–1.0 range: no explicit cap, falls through to floor check
+
+    # FLOORS — second, independent of caps above
+    if required_pct >= 1.0 and preferred_pct >= 1.0:
+        match_score = max(match_score, 93)     # perfect required + all preferred
     elif required_pct >= 1.0 and preferred_pct >= 0.60:
-        match_score = max(match_score, 88)    # full req + most pref → floor 88
+        match_score = max(match_score, 88)     # all required + most preferred
+    elif required_pct >= 1.0:
+        match_score = max(match_score, 75)     # all required met, regardless of preferred
     elif required_pct >= 0.85 and preferred_pct >= 0.60:
         match_score = max(match_score, 85)
 
+    # Minimum non-zero score when at least 1 skill matched
+    if required_matched > 0 and match_score < 5:
+        match_score = 5
+
     match_score = max(0, min(100, match_score))
 
-    # ── 4. ATS SCORE: hard caps ───────────────────────────────────────
-    if required_matched <= 2:
-        ats_score = min(ats_score, 35)
+    # ── 4. ATS SCORE: caps and floors independent ────────────────────
+    # CAPS
+    if required_matched == 0:
+        ats_score = min(ats_score, 45)   # zero required skills — cap at 45 (formatting only)
+    elif required_matched <= 2:
+        ats_score = min(ats_score, 50)
     elif required_matched <= 4:
-        ats_score = min(ats_score, 60)
+        ats_score = min(ats_score, 65)
     elif missing_count > 2:
         ats_score = min(ats_score, 72)
-    elif required_matched >= required_total and preferred_pct >= 0.60:
+    elif required_pct >= 1.0 and preferred_pct == 0.0:
+        ats_score = min(ats_score, 70)   # all required but zero preferred
+
+    # FLOORS — ATS should never be 0 for a readable resume
+    # Python enforces the floor the prompt requests
+    if required_matched == 0 and ats_score < 20:
+        ats_score = 20   # mismatched but real resume: minimum 20 ATS
+
+    # FLOORS
+    if required_matched >= required_total and preferred_pct >= 0.60:
         ats_score = max(ats_score, 82)
 
     ats_score = max(0, min(100, ats_score))
