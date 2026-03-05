@@ -5,6 +5,8 @@ import MatchedSkills from "../components/MatchedSkills.jsx";
 import SkillGaps from "../components/SkillGaps.jsx";
 import ResumeUpgrades from "../components/ResumeUpgrades.jsx";
 import LearningRoadmap from "../components/LearningRoadmap.jsx";
+import AnimatedBackground from "./AnimatedBackground.jsx";
+import logo from "../assets/logo.png";
 
 const API = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
@@ -140,6 +142,113 @@ function ScoreCard({ score, label, type }) {
           className={`score-card__fill score-card__fill--${cls}`}
           style={{ width: `${score}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ─── Score Breakdown Panel ─────────────────────────────────────────
+function ScoreBreakdownPanel({ breakdown, matchScore }) {
+  if (!breakdown) return null;
+
+  const reqMatched = breakdown.required_matched ?? 0;
+  const reqTotal = breakdown.required_total ?? 0;
+  const prefMatched = breakdown.preferred_matched ?? 0;
+  const prefTotal = breakdown.preferred_total ?? 0;
+  const E = breakdown.E ?? null;
+  const R = breakdown.R ?? null;
+  const P = breakdown.P ?? null;
+
+  if (reqTotal === 0) return null; // no data to show
+
+  const reqPct = reqTotal > 0 ? reqMatched / reqTotal : 0;
+  const prefPct = prefTotal > 0 ? prefMatched / prefTotal : null;
+
+  function BreakdownRow({ label, value, total, pts, ptsMax, barColor }) {
+    const pct = total > 0 ? (value / total) * 100 : 0;
+    return (
+      <div className="sbd__row">
+        <div className="sbd__row-label">{label}</div>
+        <div className="sbd__row-right">
+          <div className="sbd__bar-wrap">
+            <div
+              className="sbd__bar-fill"
+              style={{ width: `${pct}%`, background: barColor }}
+            />
+          </div>
+          <div className="sbd__fraction">
+            <span className="sbd__matched" style={{ color: barColor }}>
+              {value}
+            </span>
+            <span className="sbd__sep">/</span>
+            <span className="sbd__total">{total}</span>
+          </div>
+          {pts !== null && (
+            <div className="sbd__pts">
+              {Math.round(pts)}
+              <span className="sbd__pts-max">/{ptsMax}pts</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sbd">
+      <div className="sbd__header">
+        <span className="sbd__icon">⚖</span>
+        <span className="sbd__title">Score Breakdown</span>
+        <span className="sbd__formula">R×70 + P×20 + E×10</span>
+      </div>
+      <div className="sbd__rows">
+        <BreakdownRow
+          label="Required Skills"
+          value={reqMatched}
+          total={reqTotal}
+          pts={R}
+          ptsMax={70}
+          barColor={
+            reqPct >= 1 ? "#4ecdc4" : reqPct >= 0.7 ? "#e8b84b" : "#f87171"
+          }
+        />
+        {prefTotal > 0 && (
+          <BreakdownRow
+            label="Preferred Skills"
+            value={prefMatched}
+            total={prefTotal}
+            pts={P}
+            ptsMax={20}
+            barColor="#a78bfa"
+          />
+        )}
+        {E !== null && (
+          <div className="sbd__row">
+            <div className="sbd__row-label">Experience Depth</div>
+            <div className="sbd__row-right">
+              <div className="sbd__bar-wrap">
+                <div
+                  className="sbd__bar-fill"
+                  style={{ width: `${E * 10}%`, background: "#60a5fa" }}
+                />
+              </div>
+              <div className="sbd__fraction">
+                <span className="sbd__matched" style={{ color: "#60a5fa" }}>
+                  {E}
+                </span>
+                <span className="sbd__sep">/</span>
+                <span className="sbd__total">10</span>
+              </div>
+              <div className="sbd__pts">
+                {Math.round(E)}
+                <span className="sbd__pts-max">/10pts</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="sbd__footer">
+        Final score enforced by deterministic rules · Python is source of truth
       </div>
     </div>
   );
@@ -482,6 +591,7 @@ export default function HomePage() {
 
   return (
     <div className="app">
+      <AnimatedBackground />
       {loading && <LoadingScreen />}
 
       {/* Nav */}
@@ -493,7 +603,7 @@ export default function HomePage() {
               onClick={result ? reset : undefined}
               style={result ? { cursor: "pointer" } : {}}
             >
-              <div className="nav__mark">CI</div>
+              <img src={logo} alt="Career Intel Logo" className="nav__logo" />
               <div className="nav__name">
                 Career <span>Intel</span>
               </div>
@@ -608,7 +718,7 @@ export default function HomePage() {
                 </div>
               )}
 
-              <div style={{ textAlign: "center", marginTop: 24 }}>
+              <div className="analyze-section">
                 <button
                   className="btn-analyze"
                   onClick={handleAnalyze}
@@ -617,6 +727,7 @@ export default function HomePage() {
                   Analyze My Fit
                   <span className="btn-analyze__arrow">→</span>
                 </button>
+
                 {jdMode === "url" && jdUrl && !jd && (
                   <div
                     style={{
@@ -698,6 +809,12 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Score Breakdown */}
+              <ScoreBreakdownPanel
+                breakdown={result.scoring_breakdown}
+                matchScore={result.match_score}
+              />
 
               {/* Summary */}
               {(result.executive_summary ||
@@ -805,6 +922,20 @@ export default function HomePage() {
           )}
         </div>
       </main>
+      <footer className="footer">
+        <p>
+          Built with passion by{" "}
+          <a
+            href="https://www.linkedin.com/in/himanshumishra29/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-link"
+          >
+            Himanshu Mishra
+          </a>{" "}
+          · Career Intel © 2026
+        </p>
+      </footer>
     </div>
   );
 }

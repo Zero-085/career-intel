@@ -39,7 +39,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  background: var(--ink);
+  background: #020617;
   color: var(--text-0);
   font-family: var(--font-sans);
   font-size: 15px;
@@ -117,6 +117,20 @@ body {
   border-radius: 999px;
   padding: 3px 10px;
   letter-spacing: 0.06em;
+}
+
+.nav__logo {
+  height: 34px;
+  width: auto;
+  background: transparent;
+  object-fit: contain;
+  display: block;
+}
+
+.nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* ─── Hero ───────────────────────────────────────────────────────────────────── */
@@ -261,7 +275,9 @@ body {
 }
 
 .input-card {
-  background: var(--ink-1);
+  background: rgba(17, 17, 24, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--ink-3);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -457,6 +473,12 @@ body {
 
 .btn-reset:hover { color: var(--text-0); border-color: var(--text-2); }
 
+.analyze-section {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 80px;
+}
+
 /* ─── Error ──────────────────────────────────────────────────────────────────── */
 .error-msg {
   display: flex;
@@ -620,7 +642,9 @@ body {
 }
 
 .score-card {
-  background: var(--ink-1);
+  background: rgba(17, 17, 24, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--ink-3);
   border-radius: var(--r-lg);
   padding: 24px 20px;
@@ -701,7 +725,9 @@ body {
 
 /* ─── Summary Card ───────────────────────────────────────────────────────────── */
 .summary-block {
-  background: var(--ink-1);
+  background: rgba(17, 17, 24, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--ink-3);
   border-radius: var(--r-lg);
   padding: 28px;
@@ -748,7 +774,7 @@ body {
 }
 
 .sg-list {
-  background: var(--ink-2);
+  background: rgba(24, 24, 31, 0.65);
   border-radius: var(--r-md);
   padding: 16px;
 }
@@ -853,7 +879,7 @@ body {
 .gap-list { display: flex; flex-direction: column; gap: 10px; }
 
 .gap-item {
-  background: var(--ink-1);
+  background: rgba(17, 17, 24, 0.7);
   border: 1px solid var(--ink-3);
   border-radius: var(--r-md);
   padding: 16px 18px;
@@ -899,7 +925,9 @@ body {
 .upgrade-list { display: flex; flex-direction: column; gap: 20px; }
 
 .upgrade-card {
-  background: var(--ink-1);
+  background: rgba(17, 17, 24, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--ink-3);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -1061,4 +1089,331 @@ body {
   padding: 40px 0;
   color: var(--text-2);
   font-size: 0.875rem;
+}
+
+/* ─── Score Breakdown Panel (.sbd) ──────────────────────────────────────────── */
+
+.sbd {
+  background: rgba(17, 17, 24, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 20px 24px 16px;
+  margin-bottom: 24px;
+}
+
+.sbd__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sbd__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.sbd__title {
+  font-family: var(--font-head);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.sbd__formula {
+  margin-left: auto;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-size: 0.68rem;
+  color: var(--ink-5, #3e3c39);
+  letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+/* ── Row ── */
+.sbd__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sbd__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sbd__row-label {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-2);
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.sbd__row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Bar ── */
+.sbd__bar-wrap {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.sbd__bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Fraction (e.g. 6 / 7) ── */
+.sbd__fraction {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.sbd__matched {
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sbd__sep {
+  font-size: 0.75rem;
+  color: var(--ink-5, #3e3c39);
+  margin: 0 1px;
+}
+
+.sbd__total {
+  font-family: var(--font-head);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-3, #6e6a64);
+}
+
+/* ── Points (e.g. 60/70pts) ── */
+.sbd__pts {
+  font-family: var(--font-head);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-2);
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: right;
+}
+
+.sbd__pts-max {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--ink-5, #3e3c39);
+}
+
+/* ── Footer ── */
+.sbd__footer {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: var(--ink-5, #3e3c39);
+  letter-spacing: 0.02em;
+}
+
+/* Responsive — stack label above bar on small screens */
+@media (max-width: 480px) {
+  .sbd__row {
+    flex-wrap: wrap;
+  }
+  .sbd__row-label {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+}
+
+/* ─── Animated Background ─────────────────────────────────────────────────────
+   Five layered gradient blobs drift slowly across the fixed canvas.
+   All animation is GPU-composited (transform + opacity only) — no layout reflow.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.animated-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #020617;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Shared blob base */
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  will-change: transform;
+}
+
+/* ── Blob 1 — primary gold, top-left, large slow drift ── */
+.glow1 {
+  width: 680px;
+  height: 680px;
+  top: -160px;
+  left: -180px;
+  background: radial-gradient(circle at 40% 40%, rgba(232, 184, 75, 0.22), transparent 65%);
+  animation: floatA 22s ease-in-out infinite;
+}
+
+/* ── Blob 2 — deep amber, bottom-right, counter-drift ── */
+.glow2 {
+  width: 720px;
+  height: 720px;
+  bottom: -200px;
+  right: -200px;
+  background: radial-gradient(circle at 55% 55%, rgba(234, 179, 8, 0.18), transparent 60%);
+  animation: floatB 26s ease-in-out infinite;
+}
+
+/* ── Blob 3 — dark slate fill, centre, very slow pulse ── */
+.glow3 {
+  width: 900px;
+  height: 500px;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(30, 41, 59, 0.55), transparent 70%);
+  filter: blur(80px);
+  animation: floatC 34s ease-in-out infinite;
+}
+
+/* ── Blob 4 — muted gold, top-right, independent phase ── */
+.glow4 {
+  width: 480px;
+  height: 480px;
+  top: -80px;
+  right: -100px;
+  background: radial-gradient(circle at 45% 45%, rgba(250, 204, 21, 0.10), transparent 65%);
+  filter: blur(90px);
+  animation: floatA 18s ease-in-out infinite reverse;
+  animation-delay: -9s;
+}
+
+/* ── Blob 5 — ultra-faint horizontal streak across middle ── */
+.glow5 {
+  width: 100%;
+  height: 280px;
+  top: 42%;
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(232, 184, 75, 0.04) 25%,
+    rgba(234, 179, 8, 0.07) 50%,
+    rgba(232, 184, 75, 0.04) 75%,
+    transparent 100%
+  );
+  filter: blur(40px);
+  border-radius: 0;
+  animation: streakPulse 28s ease-in-out infinite;
+}
+
+/* ── Keyframes ── */
+
+/* Primary drift — diagonal float with gentle scale breathe */
+@keyframes floatA {
+  0%   { transform: translate(0px,    0px)   scale(1);    opacity: 1; }
+  25%  { transform: translate(50px,  -35px)  scale(1.06); opacity: 0.85; }
+  50%  { transform: translate(70px,   20px)  scale(1.12); opacity: 1; }
+  75%  { transform: translate(20px,   50px)  scale(1.04); opacity: 0.9; }
+  100% { transform: translate(0px,    0px)   scale(1);    opacity: 1; }
+}
+
+/* Counter drift — moves opposite to floatA */
+@keyframes floatB {
+  0%   { transform: translate(0px,   0px)   scale(1);    opacity: 1; }
+  33%  { transform: translate(-60px, 40px)  scale(1.08); opacity: 0.8; }
+  66%  { transform: translate(-30px,-50px)  scale(1.14); opacity: 0.95; }
+  100% { transform: translate(0px,   0px)   scale(1);    opacity: 1; }
+}
+
+/* Slow gentle sway — centre fill */
+@keyframes floatC {
+  0%   { transform: translateX(-50%) scaleX(1)    scaleY(1); }
+  40%  { transform: translateX(-48%) scaleX(1.08) scaleY(0.95); }
+  70%  { transform: translateX(-52%) scaleX(0.96) scaleY(1.06); }
+  100% { transform: translateX(-50%) scaleX(1)    scaleY(1); }
+}
+
+/* Horizontal streak fade */
+@keyframes streakPulse {
+  0%   { opacity: 0.6; transform: scaleX(1); }
+  50%  { opacity: 1;   transform: scaleX(1.04); }
+  100% { opacity: 0.6; transform: scaleX(1); }
+}
+
+/* ── Subtle grain overlay on top of the blobs ── */
+.animated-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* ── Accessibility — respect reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .glow { animation: none !important; }
+  .animated-bg::after { display: none; }
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────────── */
+.footer {
+  margin-top: 100px;
+  padding: 24px 0;
+  text-align: center;
+
+  background: rgba(10, 15, 30, 0.55);   /* transparency */
+  backdrop-filter: blur(6px);           /* optional glass effect */
+
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.footer p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255,255,255,0.60);
+}
+
+.footer strong,
+.footer a {
+  color: #facc15;
+  text-decoration: none;
+}
+
+.footer-link {
+  color: #facc15;
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
 }
