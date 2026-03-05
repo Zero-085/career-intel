@@ -14,15 +14,15 @@ def build_rewrite_prompt(resume_text: str, jd_text: str, analysis: dict) -> str:
     gaps        = analysis.get("critical_gaps", [])
     match_score = analysis.get("match_score", 0)
 
-    missing_names  = [m["skill"] if isinstance(m, dict) else m for m in missing]
-    upgrade_pairs  = "\n".join(
+    missing_names = [m["skill"] if isinstance(m, dict) else m for m in missing]
+    upgrade_pairs = "\n".join(
         f'  ORIGINAL: {u.get("original_bullet","")}\n  IMPROVED: {u.get("improved_bullet","")}'
         for u in upgrades if isinstance(u, dict)
     ) if upgrades else "  None provided"
 
-    return f"""
-You are an expert technical resume writer. Your job is to rewrite the candidate's resume
-so it is maximally competitive for the specific role described in the JD below.
+    return f"""You are a senior technical resume writer. Rewrite the candidate's resume to be
+maximally competitive for the target role below. Every decision must be grounded
+in what the candidate has actually done — no invention, no fabrication.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CONTEXT FROM PRIOR ANALYSIS
@@ -38,54 +38,76 @@ Suggested bullet improvements from analysis:
 {upgrade_pairs}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ABSOLUTE CONSTRAINTS — NEVER VIOLATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FACT PRESERVATION
+  - Do NOT invent companies, job titles, degrees, dates, or technologies.
+  - Do NOT add skills the resume shows zero evidence of.
+  - Do NOT invent or estimate metrics (no "~30% improvement", no "10,000 users"
+    unless the original resume already states a number).
+  - If a bullet has no metric, strengthen the action and outcome using only
+    words — do not insert placeholder numbers.
+
+SKILLS SECTION INTEGRITY
+  - Only include skills explicitly present or clearly demonstrated in the original resume.
+  - Do NOT add gap skills as "learning" or "proficient" qualifiers unless the
+    original resume mentions them. Silence is more honest than fabrication.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 REWRITING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. PRESERVE FACTS — Never invent experience, companies, degrees, or dates.
-   Only reframe and strengthen what already exists.
+1. KEYWORD ALIGNMENT
+   Weave JD keywords naturally into bullets and the summary wherever the
+   candidate has genuine evidence for them. Use the JD's exact phrasing
+   (e.g. "microservices architecture", "CI/CD pipelines") when the candidate
+   demonstrably has that experience. Do not force keywords where no evidence exists.
 
-2. KEYWORD TARGETING — Weave JD keywords naturally into bullets and summary.
-   If the JD says "microservices architecture", use that exact phrase if the
-   candidate has relevant experience, not just "services".
+2. BULLET STRENGTHENING
+   Rewrite bullets to lead with a strong action verb and make the outcome explicit.
+   Preferred pattern: "Verb + what you built/did + how/with what + concrete outcome."
+   Only include a metric if one already exists in the original resume — never estimate.
 
-3. BULLET FORMULA — Every experience bullet must follow:
-   "Accomplished [X] by doing [Y], resulting in [Z with metric]"
-   If no metric exists in the original, add a realistic estimate with a qualifier
-   like "~30% reduction" or "serving ~10,000 users". Never fabricate specifics.
+3. SKILLS SECTION
+   List only verified skills from the original resume.
+   Reorder so JD-matched skills appear first, grouped logically
+   (e.g. Languages | Frameworks | Cloud | Tools).
 
-4. SKILLS SECTION — Reorder so JD-matched skills appear first.
-   For missing skills the candidate has partial exposure to, include them
-   with a qualifier: "Docker (proficient)", "Kubernetes (learning)".
-   Never add skills the candidate has zero mention of.
+4. SUMMARY
+   2-3 sentences. Lead with the candidate's domain and strongest matched skills.
+   Mirror the JD's language and seniority level. Do not claim experience the
+   resume does not support.
 
-5. SUMMARY — Rewrite the summary to directly mirror the JD's language.
-   Lead with years of experience + domain + 2-3 strongest matched skills.
-
-6. ATS OPTIMIZATION — Use exact JD phrases in headers and bullets.
-   Avoid tables, columns, graphics in the text version.
-
-7. STRUCTURE — Maintain this order:
-   Name & Contact | Summary | Skills | Experience | Projects | Education | Certifications
+5. ATS OPTIMISATION
+   Use exact JD phrases in the summary and bullets where evidence exists.
+   Plain text only — no tables, columns, or graphics.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT
+OUTPUT RULES — STRICTLY ENFORCED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Return ONLY the rewritten resume as plain text.
-Use this exact structure with these exact section headers:
+Return ONLY the rewritten resume text. Nothing else.
+- No preamble ("Here is your rewritten resume...")
+- No commentary or explanations after the resume
+- No markdown: no **, no ##, no ```, no bullet symbols other than "-"
+- No extra blank lines between section header and its underline
+- The very first character of your response must be "SUMMARY"
+
+Use EXACTLY these section headers in EXACTLY this order.
+Omit a section only if the original resume has no content for it whatsoever.
 
 SUMMARY
 -------
-[2-3 sentence summary]
+[2–3 sentence targeted summary]
 
 TECHNICAL SKILLS
 ----------------
-[comma-separated skills, JD-matched first]
+[Comma-separated, JD-matched skills first]
 
 EXPERIENCE
 ----------
 [Job Title] | [Company] | [Dates]
-- [bullet]
 - [bullet]
 - [bullet]
 
@@ -100,19 +122,17 @@ EDUCATION
 
 CERTIFICATIONS
 --------------
-[Cert name] | [Year if known]
-
-Do NOT include a name/contact block (user will add that).
-Do NOT add any commentary, preamble, or explanation outside the resume.
-Do NOT use markdown bold (**), headers (#), or any special formatting.
+[Certification name] | [Year if known]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-JOB DESCRIPTION
+INPUT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<<<JD_START>>>
 {jd_text}
+<<<JD_END>>>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ORIGINAL RESUME
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<<<RESUME_START>>>
 {resume_text}
+<<<RESUME_END>>>
 """
