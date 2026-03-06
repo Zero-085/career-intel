@@ -37,6 +37,7 @@ def _call_anthropic(prompt: str) -> str:
     message = client.messages.create(
         model=model,
         max_tokens=MAX_TOKENS,
+        temperature=0,   # deterministic — scoring must be consistent across runs
         messages=[{"role": "user", "content": prompt}],
     )
     return message.content[0].text
@@ -53,6 +54,7 @@ def _call_openai(prompt: str) -> str:
         model=model,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=MAX_TOKENS,
+        temperature=0,   # deterministic scoring
     )
     return response.choices[0].message.content
 

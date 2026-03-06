@@ -97,24 +97,31 @@ def enforce_scores(data: dict) -> dict:
     match_score = max(0, min(100, match_score))
 
     # ── 4. ATS SCORE: caps and floors independent ────────────────────
-    # CAPS
+    # ATS measures resume keyword density and formatting quality — NOT preferred skill match.
+    # It is intentionally decoupled from preferred_pct.
+
+    # CAPS — upper bounds based on required skill coverage
     if required_matched == 0:
-        ats_score = min(ats_score, 45)   # zero required skills — cap at 45 (formatting only)
+        ats_score = min(ats_score, 45)   # zero required skills: formatting-only ATS
     elif required_matched <= 2:
         ats_score = min(ats_score, 50)
     elif required_matched <= 4:
         ats_score = min(ats_score, 65)
     elif missing_count > 2:
         ats_score = min(ats_score, 72)
-    elif required_pct >= 1.0 and preferred_pct == 0.0:
-        ats_score = min(ats_score, 70)   # all required but zero preferred
+    # NOTE: No cap for required_pct==1.0 regardless of preferred — ATS is about
+    # keyword density. A candidate who has all required keywords is well-optimised.
 
-    # FLOORS — ATS should never be 0 for a readable resume
-    # Python enforces the floor the prompt requests
+    # FLOORS — ATS should never be 0 for a readable, real resume
     if required_matched == 0 and ats_score < 20:
         ats_score = 20   # mismatched but real resume: minimum 20 ATS
 
-    # FLOORS
+    # When ALL required skills are matched, the resume clearly contains JD keywords.
+    # Floor ATS at 68 — regardless of preferred skill count.
+    if required_pct >= 1.0 and ats_score < 68:
+        ats_score = 68
+
+    # Higher floor when all required + most preferred are matched
     if required_matched >= required_total and preferred_pct >= 0.60:
         ats_score = max(ats_score, 82)
 
